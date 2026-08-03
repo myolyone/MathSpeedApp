@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- PWA Manifest & iOS Support -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6366f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Math24">
+<link rel="apple-touch-icon" href="icon-192.png">
+    <title>Math Challenge - เกมคิดเร็วสุ่มเป้าหมาย (รองรับยกกำลัง)</title>
+    <style>
+        /* ==========================================================================
+           1. CSS VARIABLES & THEMES
+           ========================================================================== */
+        :root {
+            --font-main: 'Prompt', 'Kanit', -apple-system, BlinkMacSystemFont, sans-serif;
+            --transition-speed: 0.3s;
+            
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-color: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --card-bg: rgba(30, 41, 59, 0.7);
+        }
+
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #fae8ff 50%, #f0fdf4 100%);
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent-color: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.2);
+            --card-bg: rgba(255, 255, 255, 0.75);
+        }
+
+        [data-theme="blue"] {
+            --bg-gradient: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #075985 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --text-main: #ffffff;
+            --text-muted: #bae6fd;
+            --accent-color: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --card-bg: rgba(12, 74, 110, 0.6);
+        }
+
+        [data-theme="green"] {
+            --bg-gradient: linear-gradient(135deg, #065f46 0%, #047857 50%, #064e3b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --text-main: #ffffff;
+            --text-muted: #a7f3d0;
+            --accent-color: #34d399;
+            --accent-glow: rgba(52, 211, 153, 0.4);
+            --card-bg: rgba(6, 78, 59, 0.6);
+        }
+
+        /* ==========================================================================
+           2. BASE & LAYOUT STYLES
+           ========================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            user-select: none;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 24px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-speed);
+        }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #ffffff, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.2rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .btn {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            padding: 0.85rem 1.2rem;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+            border-color: var(--accent-color);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: #ffffff;
+            border: none;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 10px;
+        }
+
+        .nav-back {
+            align-self: flex-start;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: -0.5rem;
+        }
+        .nav-back:hover { color: var(--text-main); }
+
+        /* ==========================================================================
+           3. GAME INTERFACE STYLES
+           ========================================================================== */
+        .game-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 0.75rem 1.25rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .info-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .info-box .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+        .info-box .value { font-size: 1.25rem; font-weight: 700; color: var(--text-main); }
+
+        .target-display {
+            text-align: center;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.6rem;
+            border-radius: 14px;
+            border: 1px dashed var(--glass-border);
+        }
+        .target-display span {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--warning-color);
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+        }
+
+        .numbers-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+            margin: 0.5rem 0;
+        }
+
+        .num-card {
+            background: var(--card-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            box-shadow: var(--glass-shadow);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .num-card:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        .expression-input {
+            width: 100%;
+            background: var(--card-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1rem;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: center;
+            outline: none;
+            letter-spacing: 2px;
+            transition: border-color 0.2s;
+        }
+
+        .expression-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* Updated 4-column keypad layout for Exponentiation */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+
+        .keypad-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.75rem 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            cursor: pointer;
+            text-align: center;
+        }
+        .keypad-btn:hover { background: rgba(255,255,255,0.15); }
+        .keypad-btn.accent-key {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: var(--accent-color);
+        }
+
+        .game-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .hint-box, .solution-box {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--warning-color);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+        }
+        .hint-box.active, .solution-box.active { display: block; }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .form-group label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .select-input {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .select-input option {
+            background: #1e293b;
+            color: #fff;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+        .stats-table th, .stats-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .stats-table th { color: var(--text-muted); font-size: 0.85rem; }
+        .stats-table td { font-weight: 600; }
+
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- VIEW 1: MAIN MENU -->
+        <div id="view-menu" class="view active">
+            <div class="header">
+                <h1>Math Challenge</h1>
+                <p>เกมคิดเร็วสุ่มเป้าหมาย (รองรับยกกำลัง ^) design by JK</p>
+            </div>
+
+            <button class="btn btn-primary" onclick="App.startPractice()">
+                <span>🎮</span> เล่นโหมดฝึกฝน
+            </button>
+            <button class="btn" onclick="App.startTimedMenu()">
+                <span>🏆</span> โหมดแข่งขัน (จับเวลา)
+            </button>
+            <button class="btn" onclick="UIManager.showView('view-stats')">
+                <span>📊</span> สถิติและอันดับ
+            </button>
+            <button class="btn" onclick="UIManager.showView('view-settings')">
+                <span>⚙️</span> ตั้งค่าระบบ
+            </button>
+            <button class="btn" onclick="UIManager.showView('view-howto')">
+                <span>📖</span> วิธีการเล่น
+            </button>
+        </div>
+
+        <!-- VIEW 2: TIMED CONFIG -->
+        <div id="view-timed-config" class="view">
+            <button class="nav-back" onclick="UIManager.showView('view-menu')">← ย้อนกลับ</button>
+            <div class="header">
+                <h2>ตั้งค่าการแข่งขัน</h2>
+            </div>
+            <div class="form-group">
+                <label>เลือกระยะเวลา</label>
+                <select id="select-time-limit" class="select-input">
+                    <option value="60">1 นาที</option>
+                    <option value="180" selected>3 นาที</option>
+                    <option value="300">5 นาที</option>
+                    <option value="600">10 นาที</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="App.startTimedGame()">เริ่มแข่งขันเลย!</button>
+        </div>
+
+        <!-- VIEW 3: GAME SCREEN -->
+        <div id="view-game" class="view">
+            <button class="nav-back" onclick="GameEngine.exitGame()">← หน้าหลัก</button>
+            
+            <div class="game-bar">
+                <div class="info-box">
+                    <span class="label">โหมด</span>
+                    <span class="value" id="game-mode-label">ฝึกฝน</span>
+                </div>
+                <div class="info-box">
+                    <span class="label" id="timer-label">เวลา</span>
+                    <span class="value" id="game-timer">00:00</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">คะแนน</span>
+                    <span class="value" id="game-score">0</span>
+                </div>
+            </div>
+
+            <div class="target-display">
+                เป้าหมายข้อนี้: <span id="target-number">?</span>
+            </div>
+
+            <div class="numbers-container" id="numbers-grid">
+                <!-- Dynamically populated by 4 cards -->
+            </div>
+
+            <div class="input-display-container">
+                <input type="text" id="expression-input" class="expression-input" placeholder="พิมพ์สมการที่นี่..." autocomplete="off">
+            </div>
+
+            <!-- Keypad with Exponentiation (^) -->
+            <div class="keypad">
+                <button class="keypad-btn" onclick="GameEngine.appendSymbol('+')">+</button>
+                <button class="keypad-btn" onclick="GameEngine.appendSymbol('-')">-</button>
+                <button class="keypad-btn" onclick="GameEngine.appendSymbol('*')">×</button>
+                <button class="keypad-btn" onclick="GameEngine.appendSymbol('/')">÷</button>
+                
+                <button class="keypad-btn accent-key" onclick="GameEngine.appendSymbol('^')">^ (ยกกำลัง)</button>
+                <button class="keypad-btn" onclick="GameEngine.appendSymbol('(')">(</button>
+                <button class="keypad-btn" onclick="GameEngine.appendSymbol(')')">)</button>
+                <button class="keypad-btn" onclick="GameEngine.clearInput()">ลบ (⌫)</button>
+            </div>
+
+            <div id="hint-box" class="hint-box"></div>
+            <div id="solution-box" class="solution-box"></div>
+
+            <button class="btn btn-primary" onclick="GameEngine.submitAnswer()">ส่งคำตอบ (Enter)</button>
+
+            <div class="game-controls">
+                <button class="btn btn-sm" onclick="GameEngine.getHint()">💡 ใบ้ (-2 คะแนน)</button>
+                <button class="btn btn-sm" onclick="GameEngine.showSolution()">👁️ ดูเฉลย</button>
+                <button class="btn btn-sm" id="btn-next-puzzle" style="grid-column: span 2;" onclick="GameEngine.nextQuestion()">🔄 สุ่มโจทย์ใหม่</button>
+            </div>
+        </div>
+
+        <!-- VIEW 4: TIMED SUMMARY -->
+        <div id="view-summary" class="view">
+            <div class="header">
+                <h2>สรุปผลการแข่งขัน</h2>
+            </div>
+            <div class="game-bar" style="flex-direction: column; gap: 1rem; text-align: center;">
+                <div>
+                    <span class="label">ตอบถูกทั้งหมด</span>
+                    <div class="value" style="font-size: 2.5rem; color: var(--success-color);" id="summary-correct">0</div>
+                </div>
+                <div style="display: flex; gap: 2rem;">
+                    <div>
+                        <span class="label">ตอบผิด</span>
+                        <div class="value" id="summary-wrong">0</div>
+                    </div>
+                    <div>
+                        <span class="label">เวลาที่ใช้</span>
+                        <div class="value" id="summary-time">00:00</div>
+                    </div>
+                    <div>
+                        <span class="label">คะแนนรวม</span>
+                        <div class="value" style="color: var(--accent-color);" id="summary-score">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" id="leaderboard-input-group">
+                <label>บันทึกชื่อเพื่อเข้าสู่ Leaderboard</label>
+                <input type="text" id="player-name-input" class="expression-input" placeholder="กรอกชื่อของคุณ (3-10 อักษร)" maxlength="10">
+                <button class="btn btn-primary" onclick="App.saveScore()">บันทึกคะแนน</button>
+            </div>
+
+            <button class="btn" onclick="UIManager.showView('view-menu')">กลับสู่หน้าหลัก</button>
+        </div>
+
+        <!-- VIEW 5: STATS & LEADERBOARD -->
+        <div id="view-stats" class="view">
+            <button class="nav-back" onclick="UIManager.showView('view-menu')">← ย้อนกลับ</button>
+            <div class="header">
+                <h2>สถิติ & อันดับสูงสุด</h2>
+            </div>
+
+            <div class="game-bar">
+                <div class="info-box"><span class="label">เล่นทั้งหมด</span><span class="value" id="stat-total">0</span></div>
+                <div class="info-box"><span class="label">ชนะ</span><span class="value" id="stat-win">0</span></div>
+                <div class="info-box"><span class="label">คะแนนสูงสุด</span><span class="value" id="stat-highscore">0</span></div>
+            </div>
+
+            <h3>🏆 Top 20 High Scores</h3>
+            <div style="max-height: 200px; overflow-y: auto;">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ชื่อ</th>
+                            <th>คะแนน</th>
+                            <th>วันที่</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW 6: SETTINGS -->
+        <div id="view-settings" class="view">
+            <button class="nav-back" onclick="UIManager.showView('view-menu')">← ย้อนกลับ</button>
+            <div class="header">
+                <h2>ตั้งค่าระบบ</h2>
+            </div>
+
+            <div class="form-group">
+                <label>ระดับความยาก (Difficulty)</label>
+                <select id="setting-difficulty" class="select-input" onchange="StorageManager.saveSettings()">
+                    <option value="beginner">Beginner (เลข 1-9 | เป้าหมายสุ่ม 10-30)</option>
+                    <option value="easy" selected>Easy (เลข 1-13 | เป้าหมายสุ่ม 12-50)</option>
+                    <option value="hard">Hard (เลข 1-20 | เป้าหมายสุ่ม 12-80)</option>
+                    <option value="expert">Expert (เลข 1-30 | เป้าหมายสุ่ม 20-100)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>ธีมของแอป (Theme)</label>
+                <select id="setting-theme" class="select-input" onchange="UIManager.applyTheme(this.value)">
+                    <option value="dark">Dark Glassmorphism</option>
+                    <option value="light">Light Crystal</option>
+                    <option value="blue">Deep Ocean Blue</option>
+                    <option value="green">Emerald Forest</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>การเปิดใช้งานเสียง</label>
+                <select id="setting-sound" class="select-input" onchange="StorageManager.saveSettings()">
+                    <option value="true" selected>เปิดเสียง (Web Audio API)</option>
+                    <option value="false">ปิดเสียง</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- VIEW 7: HOW TO PLAY -->
+        <div id="view-howto" class="view">
+            <button class="nav-back" onclick="UIManager.showView('view-menu')">← ย้อนกลับ</button>
+            <div class="header">
+                <h2>วิธีการเล่น</h2>
+            </div>
+            <div style="font-size: 0.95rem; line-height: 1.6; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.75rem;">
+                <p>🎯 <strong>กติกาสากล:</strong> นำตัวเลขที่กำหนดให้ทั้ง 4 ตัว มาคำนวณด้วยเครื่องหมาย <code>+</code>, <code>-</code>, <code>×</code>, <code>÷</code>, <code>^</code> (ยกกำลัง) และวงเล็บ เพื่อให้ได้ผลลัพธ์เท่ากับ **เป้าหมายที่สุ่มขึ้นมา**</p>
+                <p>💡 <strong>ตัวอย่างยกกำลัง:</strong><br>
+                โจทย์ <code>2 3 4 8</code> | เป้าหมาย <code>24</code><br>
+                สมการ: <code>2^3 + 4 * 4 = 24</code> (หรือ <code>2^3 * (8-5)</code>)</p>
+                <p>⚠️ <strong>เงื่อนไขสำคัญ:</strong></p>
+                <ul style="padding-left: 1.2rem;">
+                    <li>ต้องใช้ตัวเลขให้ครบทั้ง 4 ตัว</li>
+                    <li>แต่ละตัวเลขใช้ได้เพียงครั้งเดียว</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ==========================================================================
+         JAVASCRIPT LOGIC ARCHITECTURE
+         ========================================================================== -->
+    <script>
+        /* SOUND MANAGER */
+        const SoundManager = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            },
+            isEnabled() {
+                return document.getElementById('setting-sound').value === 'true';
+            },
+            playTone(freq, type, duration) {
+                if (!this.isEnabled()) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            },
+            click() { this.playTone(600, 'sine', 0.05); },
+            correct() {
+                if (!this.isEnabled()) return;
+                this.init();
+                [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                    setTimeout(() => this.playTone(freq, 'triangle', 0.2), idx * 80);
+                });
+            },
+            wrong() {
+                if (!this.isEnabled()) return;
+                this.init();
+                this.playTone(220, 'sawtooth', 0.15);
+                setTimeout(() => this.playTone(180, 'sawtooth', 0.25), 150);
+            },
+            timeUp() {
+                if (!this.isEnabled()) return;
+                this.playTone(445, 'square', 0.4);
+            },
+            newQuestion() { this.playTone(440, 'sine', 0.1); }
+        };
+
+        /* EXHAUSTIVE SOLVER ENGINE WITH EXPONENTIATION (^) SUPPORT */
+        const SolverEngine = {
+            solve(numbers, target) {
+                const results = new Set();
+                const EPSILON = 1e-6;
+
+                function helper(cards) {
+                    if (cards.length === 1) {
+                        if (Math.abs(cards[0].val - target) < EPSILON) {
+                            results.add(cards[0].expr);
+                        }
+                        return;
+                    }
+
+                    for (let i = 0; i < cards.length; i++) {
+                        for (let j = 0; j < cards.length; j++) {
+                            if (i === j) continue;
+
+                            const nextCards = cards.filter((_, idx) => idx !== i && idx !== j);
+                            const a = cards[i];
+                            const b = cards[j];
+
+                            // Addition, Subtraction, Multiplication
+                            helper([...nextCards, { val: a.val + b.val, expr: `(${a.expr}+${b.expr})` }]);
+                            helper([...nextCards, { val: a.val - b.val, expr: `(${a.expr}-${b.expr})` }]);
+                            helper([...nextCards, { val: a.val * b.val, expr: `(${a.expr}*${b.expr})` }]);
+
+                            // Division
+                            if (Math.abs(b.val) > EPSILON) {
+                                helper([...nextCards, { val: a.val / b.val, expr: `(${a.expr}/${b.expr})` }]);
+                            }
+
+                            // Exponentiation (a^b) with sanity checks to prevent overflow/lag
+                            if (a.val >= 0 && b.val >= 0 && b.val <= 10 && Math.pow(a.val, b.val) <= 10000) {
+                                helper([...nextCards, { val: Math.pow(a.val, b.val), expr: `(${a.expr}^${b.expr})` }]);
+                            }
+                        }
+                    }
+                }
+
+                const initialCards = numbers.map(n => ({ val: n, expr: n.toString() }));
+                helper(initialCards);
+                return Array.from(results);
+            }
+        };
+
+        /* DYNAMIC PUZZLE GENERATOR */
+        const PuzzleGenerator = {
+            generate(difficulty) {
+                let minNum = 1, maxNum = 13;
+                let possibleTargets = [];
+
+                if (difficulty === 'beginner') { 
+                    minNum = 1; maxNum = 9; 
+                    possibleTargets = [10, 12, 15, 16, 18, 20, 24, 25, 30];
+                } else if (difficulty === 'easy') { 
+                    minNum = 1; maxNum = 13; 
+                    possibleTargets = [12, 14, 16, 18, 20, 22, 24, 28, 30, 32, 36, 40, 48, 50];
+                } else if (difficulty === 'hard') {
+                    minNum = 1; maxNum = 20;
+                    possibleTargets = [12, 18, 20, 24, 30, 36, 42, 48, 54, 60, 64, 72, 80];
+                } else if (difficulty === 'expert') {
+                    minNum = 1; maxNum = 30;
+                    possibleTargets = [20, 24, 30, 36, 42, 48, 50, 60, 72, 80, 84, 90, 96, 100];
+                }
+
+                let solutions = [];
+                let nums = [];
+                let target = 24;
+
+                while (solutions.length === 0) {
+                    target = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
+                    nums = Array.from({ length: 4 }, () => Math.floor(Math.random() * (maxNum - minNum + 1)) + minNum);
+                    solutions = SolverEngine.solve(nums, target);
+                }
+
+                return { numbers: nums, target: target, solutions: solutions };
+            }
+        };
+
+        /* EXPRESSION VALIDATOR WITH POWER (^) SUPPORT */
+        const ExpressionValidator = {
+            validate(exprString, targetNumbers, targetValue) {
+                if (!exprString || exprString.trim() === "") {
+                    return { valid: false, msg: "กรุณากรอกสมการ" };
+                }
+
+                const extractedNumbers = exprString.match(/\d+/g);
+                if (!extractedNumbers) {
+                    return { valid: false, msg: "ไม่พบตัวเลขในสมการ" };
+                }
+
+                const usedNums = extractedNumbers.map(Number).sort((a,b) => a-b);
+                const targetSorted = [...targetNumbers].sort((a,b) => a-b);
+
+                if (usedNums.length !== targetSorted.length) {
+                    return { valid: false, msg: `ต้องใช้ตัวเลขให้ครบ ${targetSorted.length} ตัว` };
+                }
+
+                for (let i = 0; i < usedNums.length; i++) {
+                    if (usedNums[i] !== targetSorted[i]) {
+                        return { valid: false, msg: "ใช้ตัวเลขไม่ตรงตามโจทย์ที่กำหนด" };
+                    }
+                }
+
+                try {
+                    // Check for allowed characters (+, -, *, /, ^, (, ), numbers, spaces)
+                    if (/[^0-9\+\-\*\/\^\(\)\s]/.test(exprString)) {
+                        return { valid: false, msg: "มีอักขระที่ไม่ได้รับอนุญาต" };
+                    }
+
+                    // Convert '^' operator to JS exponentiation operator '**'
+                    const jsExpression = exprString.replace(/\^/g, '**');
+
+                    const result = Function(`"use strict"; return (${jsExpression})`)();
+
+                    if (typeof result !== 'number' || !isFinite(result)) {
+                        return { valid: false, msg: "สมการไม่ถูกต้องตามหลักคณิตศาสตร์" };
+                    }
+
+                    const EPSILON = 1e-6;
+                    if (Math.abs(result - targetValue) < EPSILON) {
+                        return { valid: true, msg: "ถูกต้องสำเร็จ!" };
+                    } else {
+                        return { valid: false, msg: `คำนวณได้ ${result} (ยังไม่เท่ากับ ${targetValue})` };
+                    }
+                } catch (e) {
+                    return { valid: false, msg: "รูปแบบไวยากรณ์สมการไม่ถูกต้อง (Syntax Error)" };
+                }
+            }
+        };
+
+        /* STORAGE MANAGER */
+        const StorageManager = {
+            getStats() {
+                const data = localStorage.getItem('math_game_stats');
+                return data ? JSON.parse(data) : { total: 0, win: 0, highscore: 0 };
+            },
+            saveStats(stats) {
+                localStorage.setItem('math_game_stats', JSON.stringify(stats));
+            },
+            getLeaderboard() {
+                const data = localStorage.getItem('math_game_leaderboard');
+                return data ? JSON.parse(data) : [];
+            },
+            saveLeaderboard(entry) {
+                let board = this.getLeaderboard();
+                board.push(entry);
+                board.sort((a, b) => b.score - a.score);
+                board = board.slice(0, 20);
+                localStorage.setItem('math_game_leaderboard', JSON.stringify(board));
+            },
+            saveSettings() {
+                const settings = {
+                    difficulty: document.getElementById('setting-difficulty').value,
+                    theme: document.getElementById('setting-theme').value,
+                    sound: document.getElementById('setting-sound').value
+                };
+                localStorage.setItem('math_game_settings', JSON.stringify(settings));
+            },
+            loadSettings() {
+                const data = localStorage.getItem('math_game_settings');
+                if (data) {
+                    const settings = JSON.parse(data);
+                    document.getElementById('setting-difficulty').value = settings.difficulty || 'easy';
+                    document.getElementById('setting-theme').value = settings.theme || 'dark';
+                    document.getElementById('setting-sound').value = settings.sound || 'true';
+                    UIManager.applyTheme(settings.theme || 'dark');
+                }
+            }
+        };
+
+        /* GAME ENGINE */
+        const GameEngine = {
+            mode: 'practice',
+            timerInterval: null,
+            secondsElapsed: 0,
+            timeLimit: 180,
+            score: 0,
+            currentPuzzle: null,
+            solutionIndex: 0,
+            statsCurrentGame: { correct: 0, wrong: 0 },
+
+            start(mode, options = {}) {
+                this.mode = mode;
+                this.score = 0;
+                this.secondsElapsed = 0;
+                this.statsCurrentGame = { correct: 0, wrong: 0 };
+                
+                document.getElementById('game-score').innerText = this.score;
+                document.getElementById('game-mode-label').innerText = mode === 'practice' ? 'ฝึกฝน' : 'แข่งขัน';
+
+                if (mode === 'timed') {
+                    this.timeLimit = parseInt(options.timeLimit || 180);
+                }
+
+                this.startTimer();
+                this.nextQuestion();
+                UIManager.showView('view-game');
+            },
+
+            startTimer() {
+                clearInterval(this.timerInterval);
+                const timerDisplay = document.getElementById('game-timer');
+                
+                this.timerInterval = setInterval(() => {
+                    this.secondsElapsed++;
+                    
+                    if (this.mode === 'practice') {
+                        timerDisplay.innerText = this.formatTime(this.secondsElapsed);
+                    } else {
+                        const remain = this.timeLimit - this.secondsElapsed;
+                        timerDisplay.innerText = this.formatTime(Math.max(0, remain));
+                        if (remain <= 0) {
+                            this.endTimedGame();
+                        }
+                    }
+                }, 1000);
+            },
+
+            formatTime(totalSec) {
+                const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+                const s = (totalSec % 60).toString().padStart(2, '0');
+                return `${m}:${s}`;
+            },
+
+            nextQuestion() {
+                const diff = document.getElementById('setting-difficulty').value;
+                
+                this.currentPuzzle = PuzzleGenerator.generate(diff);
+                this.solutionIndex = 0;
+
+                const targetEl = document.getElementById('target-number');
+                targetEl.innerText = this.currentPuzzle.target;
+                
+                document.getElementById('expression-input').value = '';
+                document.getElementById('hint-box').classList.remove('active');
+                document.getElementById('solution-box').classList.remove('active');
+                
+                this.renderCards();
+                SoundManager.newQuestion();
+            },
+
+            renderCards() {
+                const grid = document.getElementById('numbers-grid');
+                grid.innerHTML = '';
+                this.currentPuzzle.numbers.forEach((num) => {
+                    const card = document.createElement('div');
+                    card.className = 'num-card';
+                    card.innerText = num;
+                    card.onclick = () => {
+                        SoundManager.click();
+                        this.appendSymbol(num);
+                    };
+                    grid.appendChild(card);
+                });
+            },
+
+            appendSymbol(sym) {
+                const input = document.getElementById('expression-input');
+                input.value += sym;
+                input.focus();
+            },
+
+            clearInput() {
+                const input = document.getElementById('expression-input');
+                input.value = input.value.slice(0, -1);
+                input.focus();
+            },
+
+            submitAnswer() {
+                const input = document.getElementById('expression-input');
+                const expr = input.value;
+                const result = ExpressionValidator.validate(expr, this.currentPuzzle.numbers, this.currentPuzzle.target);
+
+                if (result.valid) {
+                    SoundManager.correct();
+                    this.score += 10;
+                    this.statsCurrentGame.correct++;
+                    document.getElementById('game-score').innerText = this.score;
+                    
+                    let stats = StorageManager.getStats();
+                    stats.total++;
+                    stats.win++;
+                    if (this.score > stats.highscore) stats.highscore = this.score;
+                    StorageManager.saveStats(stats);
+
+                    this.nextQuestion();
+                } else {
+                    SoundManager.wrong();
+                    this.score = Math.max(0, this.score - 1);
+                    this.statsCurrentGame.wrong++;
+                    document.getElementById('game-score').innerText = this.score;
+                    
+                    input.classList.add('shake');
+                    setTimeout(() => input.classList.remove('shake'), 400);
+                    alert(result.msg);
+                }
+            },
+
+            getHint() {
+                SoundManager.click();
+                this.score = Math.max(0, this.score - 2);
+                document.getElementById('game-score').innerText = this.score;
+
+                const sol = this.currentPuzzle.solutions[0];
+                const hintBox = document.getElementById('hint-box');
+                
+                const ops = sol.match(/[\+\-\*\/\^]/g);
+                const firstNum = sol.match(/\d+/)[0];
+
+                const hints = [
+                    `คำใบ้: ลองเริ่มด้วยเลข ${firstNum}`,
+                    `คำใบ้: มีการใช้เครื่องหมาย ${ops ? ops[0] : '+'}`,
+                    `คำใบ้: มีวิธีแก้ทั้งหมด ${this.currentPuzzle.solutions.length} วิธี`
+                ];
+
+                hintBox.innerText = hints[Math.floor(Math.random() * hints.length)];
+                hintBox.classList.add('active');
+            },
+
+            showSolution() {
+    SoundManager.click();
+    const solBox = document.getElementById('solution-box');
+    
+    // ดึงวิธีคิดทั้งหมดมาเชื่อมต่อกันด้วยการขึ้นบรรทัดใหม่ (<br>)
+    const allSolutions = this.currentPuzzle.solutions
+        .map((sol, index) => `${index + 1}. ${sol} = ${this.currentPuzzle.target}`)
+        .join('<br>');
+
+    // แสดงผลจำนวนวิธีทั้งหมด พร้อมรายการคำตอบทุกรูปแบบ
+    solBox.innerHTML = `<strong>เฉลยทั้งหมด (${this.currentPuzzle.solutions.length} วิธี):</strong><br><br>${allSolutions}`;
+    solBox.style.textAlign = 'left'; // ปรับจัดชิดซ้ายให้ อ่านง่ายขึ้นเมื่อมีหลายบรรทัด
+    solBox.classList.add('active');
+},
+
+            endTimedGame() {
+                clearInterval(this.timerInterval);
+                SoundManager.timeUp();
+
+                document.getElementById('summary-correct').innerText = this.statsCurrentGame.correct;
+                document.getElementById('summary-wrong').innerText = this.statsCurrentGame.wrong;
+                document.getElementById('summary-time').innerText = this.formatTime(this.secondsElapsed);
+                document.getElementById('summary-score').innerText = this.score;
+
+                UIManager.showView('view-summary');
+            },
+
+            exitGame() {
+                clearInterval(this.timerInterval);
+                UIManager.showView('view-menu');
+            }
+        };
+
+        /* UI MANAGER */
+        const UIManager = {
+            showView(viewId) {
+                SoundManager.click();
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                const target = document.getElementById(viewId);
+                if (target) target.classList.add('active');
+
+                if (viewId === 'view-stats') {
+                    this.renderStats();
+                }
+            },
+
+            applyTheme(themeName) {
+                document.documentElement.setAttribute('data-theme', themeName);
+                StorageManager.saveSettings();
+            },
+
+            renderStats() {
+                const stats = StorageManager.getStats();
+                document.getElementById('stat-total').innerText = stats.total;
+                document.getElementById('stat-win').innerText = stats.win;
+                document.getElementById('stat-highscore').innerText = stats.highscore;
+
+                const leaderboard = StorageManager.getLeaderboard();
+                const tbody = document.getElementById('leaderboard-body');
+                tbody.innerHTML = '';
+
+                if (leaderboard.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">ยังไม่มีข้อมูลสถิติ</td></tr>';
+                    return;
+                }
+
+                leaderboard.forEach((entry, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${idx + 1}</td>
+                        <td>${entry.name}</td>
+                        <td>${entry.score}</td>
+                        <td>${entry.date}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        };
+
+        /* APP MAIN ENTRY POINT */
+        const App = {
+            init() {
+                StorageManager.loadSettings();
+                
+                document.getElementById('expression-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        GameEngine.submitAnswer();
+                    }
+                });
+            },
+
+            startPractice() {
+                GameEngine.start('practice');
+            },
+
+            startTimedMenu() {
+                UIManager.showView('view-timed-config');
+            },
+
+            startTimedGame() {
+                const timeLimit = document.getElementById('select-time-limit').value;
+                GameEngine.start('timed', { timeLimit });
+            },
+
+            saveScore() {
+                const nameInput = document.getElementById('player-name-input');
+                const name = nameInput.value.trim() || 'Anonymous';
+                
+                StorageManager.saveLeaderboard({
+                    name: name,
+                    score: GameEngine.score,
+                    date: new Date().toLocaleDateString('th-TH')
+                });
+
+                nameInput.value = '';
+                UIManager.showView('view-stats');
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('Service Worker Registered!'))
+        .catch((err) => console.log('SW Registration Failed: ', err));
+    });
+  }
+</script>
+</body>
+</html>
